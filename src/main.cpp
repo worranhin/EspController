@@ -34,6 +34,8 @@ void loop() {
   communicateRoutine();
 }
 
+// put function definitions here:
+
 void communicateRoutine() {
   if (Serial.available() > 1) {
     // read the incoming byte:
@@ -43,26 +45,30 @@ void communicateRoutine() {
     Serial.readBytes(inBytes, 2);
 
     // say what you got:
-    Serial.print("I received: ");
-    Serial.println(inBytes[0], DEC);
-    Serial.println(inBytes[1], DEC);
+    // Serial.println("I received: ");
+    // Serial.println(inBytes[0], HEX);
+    // Serial.println(inBytes[1], HEX);
 
     handleCommand(inBytes[0], inBytes[1]);
   }
 }
 
-// put function definitions here:
 void handleCommand(uint8_t cmd, uint8_t data) {
   uint8_t cmdType = cmd & 0x0f;
   uint8_t deviceId = (cmd & 0xf0) >> 4;
+  Serial.write(cmd);
 
+  // 检查设备码合法性
   if (deviceId < 1 || deviceId > (sizeof(deviceList) / sizeof(deviceList[0]))) {
-    Serial.println(ErrorCode::ERR_DEVICE_ID);
+    Serial.write((int)ErrorCode::ERRCODE_DEVICE_ID);
     return;
+  } else {
+    Serial.write((int)ErrorCode::ERRCODE_OK);
   }
 
   LinearStepper* lStepper = (LinearStepper*)deviceList[deviceId - 1];
   JsonDocument doc;
+  LinearStepper::Status stat;
 
   switch (cmdType) {
     case CmdCode::E_STOP:
@@ -72,13 +78,13 @@ void handleCommand(uint8_t cmd, uint8_t data) {
 
     case CmdCode::GET_STATUS:
       // print the status to serial
-      auto stat = lStepper->getStatus();
+      stat = lStepper->getStatus();
       doc["position"] = stat.position;
       doc["speed"] = stat.speed;
       doc["acceleration"] = stat.acceleration;
       doc["target"] = stat.target;
-      doc["distance"] = stat.distance;
       serializeJson(doc, Serial);
+      Serial.println("");
       break;
 
     case CmdCode::SET_ZERO:
@@ -86,8 +92,8 @@ void handleCommand(uint8_t cmd, uint8_t data) {
       lStepper->setZero();
       break;
 
-    case CmdCode::SET_DIR:
-      // TODO: set the direction
+    case CmdCode::SET_TAR:
+      // TODO: set the target
       break;
 
     case CmdCode::SET_SPEED:

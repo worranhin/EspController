@@ -2,11 +2,11 @@
 
 LinearStepper::LinearStepper(uint8_t step,
                              uint8_t dir,
-                             uint ms = 1,
-                             bool revertDir = false,
-                             uint travel = 20,
-                             uint spr = 200,
-                             uint spm = 200)
+                             uint ms,
+                             bool revertDir,
+                             uint travel,
+                             uint spr,
+                             uint spm)
     : AccelStepper(DRIVER, step, dir),
       _stepPin(step),
       _dirPin(dir),
