@@ -3,7 +3,6 @@
 LinearStepper::LinearStepper(uint8_t step,
                              uint8_t dir,
                              uint ms,
-                             bool revertDir,
                              uint travel,
                              uint spr,
                              uint spm)
@@ -15,16 +14,14 @@ LinearStepper::LinearStepper(uint8_t step,
       _SPR(spr),
       _SPM(spm) {
   _position = 0;
-  _direction = revertDir ? -1 : 1;
 };
 
 LinearStepper::Status LinearStepper::getStatus() {
-  long pos = currentPosition();
-  float spd = speed();
-  float acc = acceleration();
-  long tar = targetPosition();
-  long dis = distanceToGo();
-  Status s = {pos, spd, acc, tar, dis};
+  long pos = currentPosition() / _SPM;
+  float spd = speed() / _SPM;
+  float acc = acceleration() / _SPM;
+  long tar = targetPosition() / _SPM;
+  Status s = {pos, spd, acc, tar};
   return s;
 }
 
@@ -43,6 +40,10 @@ void LinearStepper::setMaxSpeed_mm(float speed) {
 
 void LinearStepper::setAcc_mm(float acc) {
   setAcceleration(acc * _SPM * _ms);
+}
+
+void LinearStepper::setTarget_mm(byte target) {
+  moveTo_mm(target);
 }
 
 void LinearStepper::setState(State s) {

@@ -13,13 +13,11 @@ class LinearStepper : public AccelStepper {
     float speed;
     float acceleration;
     long target;
-    long distance;
   };
 
   LinearStepper(uint8_t step,
                 uint8_t dir,
                 uint ms = 1,
-                bool revertDir = false,
                 uint travel = 20,
                 uint spr = 200,
                 uint spm = 200);
@@ -29,6 +27,7 @@ class LinearStepper : public AccelStepper {
   void setSpeed_mm(float speed);
   void setMaxSpeed_mm(float speed);
   void setAcc_mm(float acc);
+  void setTarget_mm(byte target);
   void setState(State s);
   void setMs(int ms);
   void moveTo_mm(uint8_t x);
@@ -42,7 +41,6 @@ class LinearStepper : public AccelStepper {
   unsigned int _ms;      // micro steps
   uint8_t _stepPin;
   uint8_t _dirPin;
-  int _direction = 1;
 };
 
 #endif

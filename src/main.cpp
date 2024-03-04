@@ -94,6 +94,7 @@ void handleCommand(uint8_t cmd, uint8_t data) {
 
     case CmdCode::SET_TAR:
       // TODO: set the target
+      lStepper->setTarget_mm(data);
       break;
 
     case CmdCode::SET_SPEED:
@@ -109,7 +110,7 @@ void handleCommand(uint8_t cmd, uint8_t data) {
 
     case CmdCode::CTRL_RUN:
       // let the motor run
-      lStepper->setState(LinearStepper::RUN_SPEED);
+      lStepper->setState(LinearStepper::RUN);
       break;
 
     case CmdCode::CTRL_STOP:
