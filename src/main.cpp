@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include "CmdCode.h"
+#include "Communication.h"
 #include "ErrorCode.h"
 #include "LinearStepper.h"
 #include "pinConfig.h"
@@ -37,99 +38,51 @@ void loop() {
 // put function definitions here:
 
 void communicateRoutine() {
-  if (Serial.available() > 1) {
-    // read the incoming byte:
-    // incomingByte = Serial.read();
-
-    uint8_t inBytes[2];
-    Serial.readBytes(inBytes, 2);
-
-    // say what you got:
-    // Serial.println("I received: ");
-    // Serial.println(inBytes[0], HEX);
-    // Serial.println(inBytes[1], HEX);
-
-    handleCommand(inBytes[0], inBytes[1]);
-  }
-}
-
-void handleCommand(uint8_t cmd, uint8_t data) {
-  uint8_t cmdType = cmd & 0x0f;
-  uint8_t deviceId = (cmd & 0xf0) >> 4;
-  Serial.write(cmd);
-
-  // 检查设备码合法性
-  if (deviceId < 1 || deviceId > (sizeof(deviceList) / sizeof(deviceList[0]))) {
-    Serial.write((int)ErrorCode::ERRCODE_DEVICE_ID);
+  if (Serial.available() == 0) {
     return;
-  } else {
-    Serial.write((int)ErrorCode::ERRCODE_OK);
   }
 
-  LinearStepper* lStepper = (LinearStepper*)deviceList[deviceId - 1];
+  String s = Serial.readStringUntil('\n');
   JsonDocument doc;
-  LinearStepper::Status stat;
+  deserializeJson(doc, s);
+  serializeJson(doc, Serial);
+  Serial.println();
 
-  switch (cmdType) {
-    case CmdCode::E_STOP:
-      // 紧急停止
-      lStepper->stop();
-      break;
+  Comm_Mode mode = doc["Mode"];
 
-    case CmdCode::GET_STATUS:
-      // print the status to serial
-      stat = lStepper->getStatus();
-      doc["position"] = stat.position;
-      doc["speed"] = stat.speed;
-      doc["acceleration"] = stat.acceleration;
-      doc["target"] = stat.target;
-      serializeJson(doc, Serial);
-      Serial.println("");
-      break;
+  // 根据 mode 的值，做出相应的行为
 
-    case CmdCode::SET_ZERO:
-      // set the current location as zero
-      lStepper->setZero();
-      break;
+  if (mode == Comm_Mode::COMM_STOP) {  // Mode: COMM_STOP
+    if (stepper1.runMode == LinearStepper::RUN)
+      stepper1.stop();
+    else if (stepper1.runMode == LinearStepper::RUN_SPEED)
+      stepper1.setSpeed_mm(0.0);
 
-    case CmdCode::SET_TAR:
-      // TODO: set the target
-      lStepper->setTarget_mm(data);
-      break;
+  } else if (mode == Comm_Mode::COMM_RUN) {  // Mode: COMM_RUN
+    float mspd = doc["MaxSpeed"];
+    float acc = doc["Acceleration"];
+    float tar = doc["Target"];
+    stepper1.setState(LinearStepper::RunMode::RUN);
+    stepper1.setMaxSpeed_mm(mspd);
+    stepper1.setAcc_mm(acc);
+    stepper1.setTarget_mm(tar);
 
-    case CmdCode::SET_SPEED:
-      // set the speed
-      lStepper->setSpeed_mm(data);
-      lStepper->setMaxSpeed_mm(data);
-      break;
+  } else if (mode == Comm_Mode::COMM_RUN_SPEED) {  // Mode: COMM_RUN_SPEED
+    float spd = doc["Speed"];
+    stepper1.setState(LinearStepper::RunMode::RUN_SPEED);
+    if (stepper1.maxSpeed_mm() < spd)
+      stepper1.setMaxSpeed_mm(spd);
+    stepper1.setSpeed_mm(spd);
 
-    case CmdCode::SET_ACC:
-      // set the acceleration
-      lStepper->setAcc_mm(data);
-      break;
-
-    case CmdCode::CTRL_RUN:
-      // let the motor run
-      lStepper->setState(LinearStepper::RUN);
-      break;
-
-    case CmdCode::CTRL_STOP:
-      // stop the motor
-      lStepper->stop();
-      lStepper->setState(LinearStepper::STOP);
-      break;
-
-    case CmdCode::CTRL_GO_MM:
-      // control the motor to go x mm
-      lStepper->moveTo_mm(data);
-      break;
-
-    case CmdCode::CTRL_GO_ZERO:
-      // cotrol the motor to go to zero position
-      lStepper->moveTo_mm(0);
-      break;
-
-    default:
-      break;
+  } else if (mode == Comm_Mode::COMM_STATUS) {  // Mode: COMM_STATUS
+    // auto stat = stepper1.getStatus();
+    JsonDocument statusDoc = doc;
+    statusDoc["Speed"] = stepper1.speed_mm();
+    statusDoc["MaxSpeed"] = stepper1.maxSpeed_mm();
+    statusDoc["Acceleration"] = stepper1.acceleration_mm();
+    statusDoc["Target"] = stepper1.target_mm();
+    statusDoc["Position"] = stepper1.positon_mm();
+    serializeJson(statusDoc, Serial);
+    Serial.println();
   }
 }

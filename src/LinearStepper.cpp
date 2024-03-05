@@ -14,16 +14,8 @@ LinearStepper::LinearStepper(uint8_t step,
       _SPR(spr),
       _SPM(spm) {
   _position = 0;
+  runMode = RUN;
 };
-
-LinearStepper::Status LinearStepper::getStatus() {
-  long pos = currentPosition() / _SPM;
-  float spd = speed() / _SPM;
-  float acc = acceleration() / _SPM;
-  long tar = targetPosition() / _SPM;
-  Status s = {pos, spd, acc, tar};
-  return s;
-}
 
 void LinearStepper::setZero() {
   setCurrentPosition(0);
@@ -42,28 +34,44 @@ void LinearStepper::setAcc_mm(float acc) {
   setAcceleration(acc * _SPM * _ms);
 }
 
-void LinearStepper::setTarget_mm(byte target) {
+void LinearStepper::setTarget_mm(float target) {
   moveTo_mm(target);
 }
 
-void LinearStepper::setState(State s) {
-  state = s;
+void LinearStepper::setState(RunMode s) {
+  runMode = s;
 }
 
 void LinearStepper::setMs(int ms) {
   _ms = ms;
 }
 
-void LinearStepper::moveTo_mm(uint8_t x) {
+void LinearStepper::moveTo_mm(float x) {
   moveTo(x * _SPM * _ms);
 }
 
-void LinearStepper::routine() {
-  switch (state) {
-    case STOP:
-      stop();
-      break;
+float LinearStepper::speed_mm() {
+  return speed() / _SPM / _ms;
+}
 
+float LinearStepper::maxSpeed_mm() {
+  return maxSpeed() / _SPM / _ms;
+}
+
+float LinearStepper::acceleration_mm() {
+  return acceleration() / _SPM / _ms;
+}
+
+float LinearStepper::target_mm() {
+  return (double)targetPosition() / _SPM / _ms;
+}
+
+float LinearStepper::positon_mm() {
+  return (double)currentPosition() / _SPM / _ms;
+}
+
+void LinearStepper::routine() {
+  switch (runMode) {
     case RUN_SPEED:
       runSpeed();
       break;

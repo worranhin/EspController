@@ -6,14 +6,7 @@
 
 class LinearStepper : public AccelStepper {
  public:
-  enum State { STOP, RUN, RUN_SPEED } state;
-
-  struct Status {
-    long position;
-    float speed;
-    float acceleration;
-    long target;
-  };
+  enum RunMode { RUN, RUN_SPEED } runMode;
 
   LinearStepper(uint8_t step,
                 uint8_t dir,
@@ -22,15 +15,19 @@ class LinearStepper : public AccelStepper {
                 uint spr = 200,
                 uint spm = 200);
   ~LinearStepper(){};
-  Status getStatus();
   void setZero();
   void setSpeed_mm(float speed);
   void setMaxSpeed_mm(float speed);
   void setAcc_mm(float acc);
-  void setTarget_mm(byte target);
-  void setState(State s);
+  void setTarget_mm(float target);
+  void setState(RunMode s);
   void setMs(int ms);
-  void moveTo_mm(uint8_t x);
+  void moveTo_mm(float x);
+  float speed_mm();
+  float maxSpeed_mm();
+  float acceleration_mm();
+  float target_mm();
+  float positon_mm();
   void routine();
 
  private:
