@@ -7,22 +7,20 @@
 #include "LinearStepper.h"
 #include "pinConfig.h"
 
-// int incomingByte = 0; // 用于存储串口接收的消息
-// AccelStepper stepper(AccelStepper::DRIVER, stepPin1, dirPin1);
 LinearStepper stepper1(stepPin1, dirPin1);
 LinearStepper stepper2(stepPin2, dirPin2);
 LinearStepper stepper3(stepPin3, dirPin3);
-LinearStepper stepper4(stepPin4, dirPin4);
-LinearStepper* deviceList[] = {&stepper1, &stepper2, &stepper3, &stepper4};
+// LinearStepper stepper4(stepPin4, dirPin4);
+LinearStepper *deviceList[] = {&stepper1, &stepper2, &stepper3};
 
 // put function declarations here:
-void communicateRoutine();
-void handleCommand(uint8_t cmd, uint8_t data);
+
+void communicateRoutine();  // 通讯例程
 
 void setup() {
   // put your setup code here, to run once:
 
-  Serial.begin(9600);
+  Serial.begin(115200);
   while (!Serial)
     ;
 
@@ -31,12 +29,18 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+
+  // 步进电机运行例程
   stepper1.routine();
-  communicateRoutine();
+  stepper2.routine();
+  stepper3.routine();
+
+  communicateRoutine(); // 通讯例程
 }
 
 // put function definitions here:
 
+/// @brief 通讯例行程序
 void communicateRoutine() {
   if (Serial.available() == 0) {
     return;
@@ -49,40 +53,58 @@ void communicateRoutine() {
   Serial.println();
 
   Comm_Mode mode = doc["Mode"];
+  byte id = doc["DeviceId"];
+  LinearStepper *pStepper = deviceList[id - 1];
 
   // 根据 mode 的值，做出相应的行为
 
   if (mode == Comm_Mode::COMM_STOP) {  // Mode: COMM_STOP
-    if (stepper1.runMode == LinearStepper::RUN)
-      stepper1.stop();
-    else if (stepper1.runMode == LinearStepper::RUN_SPEED)
-      stepper1.setSpeed_mm(0.0);
+      pStepper->stop();
+      pStepper->setSpeed_mm(0.0);
+    // if (pStepper->runMode == LinearStepper::RUN)
+    // else if (pStepper->runMode == LinearStepper::RUN_SPEED)
 
   } else if (mode == Comm_Mode::COMM_RUN) {  // Mode: COMM_RUN
-    float mspd = doc["MaxSpeed"];
-    float acc = doc["Acceleration"];
+    // float mspd = doc["MaxSpeed"];
+    // float acc = doc["Acceleration"];
+    float spd = doc["Speed"];
     float tar = doc["Target"];
-    stepper1.setState(LinearStepper::RunMode::RUN);
-    stepper1.setMaxSpeed_mm(mspd);
-    stepper1.setAcc_mm(acc);
-    stepper1.setTarget_mm(tar);
+    pStepper->setState(LinearStepper::RunMode::RUN);
+    // pStepper->setMaxSpeed_mm(mspd);
+    // pStepper->setAcc_mm(acc);
+    if(spd > pStepper->maxSpeed_mm())
+      pStepper->setMaxSpeed_mm(spd);
+    pStepper->setTarget_mm(tar);
+    pStepper->setSpeed_mm(spd);
+    
+    
+    // float mspd = doc["MaxSpeed"];
+    // float acc = doc["Acceleration"];
+    // float tar = doc["Target"];
+    // pStepper->setState(LinearStepper::RunMode::RUN);
+    // pStepper->setMaxSpeed_mm(mspd);
+    // pStepper->setAcc_mm(acc);
+    // pStepper->setTarget_mm(tar);
 
   } else if (mode == Comm_Mode::COMM_RUN_SPEED) {  // Mode: COMM_RUN_SPEED
     float spd = doc["Speed"];
-    stepper1.setState(LinearStepper::RunMode::RUN_SPEED);
-    if (stepper1.maxSpeed_mm() < spd)
-      stepper1.setMaxSpeed_mm(spd);
-    stepper1.setSpeed_mm(spd);
+    pStepper->setState(LinearStepper::RunMode::RUN_SPEED);
+    if (pStepper->maxSpeed_mm() < spd)
+      pStepper->setMaxSpeed_mm(spd);
+    pStepper->setSpeed_mm(spd);
 
   } else if (mode == Comm_Mode::COMM_STATUS) {  // Mode: COMM_STATUS
-    // auto stat = stepper1.getStatus();
+    // auto stat = pStepper->getStatus();
     JsonDocument statusDoc = doc;
-    statusDoc["Speed"] = stepper1.speed_mm();
-    statusDoc["MaxSpeed"] = stepper1.maxSpeed_mm();
-    statusDoc["Acceleration"] = stepper1.acceleration_mm();
-    statusDoc["Target"] = stepper1.target_mm();
-    statusDoc["Position"] = stepper1.positon_mm();
+    statusDoc["Speed"] = pStepper->speed_mm();
+    statusDoc["MaxSpeed"] = pStepper->maxSpeed_mm();
+    statusDoc["Acceleration"] = pStepper->acceleration_mm();
+    statusDoc["Target"] = pStepper->target_mm();
+    statusDoc["Position"] = pStepper->positon_mm();
     serializeJson(statusDoc, Serial);
     Serial.println();
+
+  } else if (mode == Comm_Mode::COMM_ZERO) { // Mode: COMM_ZERO
+    pStepper->setZero();
   }
 }

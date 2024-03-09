@@ -8,8 +8,8 @@ enum Pins {
   dirPin1 = GPIO_NUM_5,
   stepPin2 = GPIO_NUM_6,
   dirPin2 = GPIO_NUM_7,
-  stepPin3 = GPIO_NUM_8,
-  dirPin3 = GPIO_NUM_9,
+  stepPin3 = GPIO_NUM_15,
+  dirPin3 = GPIO_NUM_16,
   stepPin4 = GPIO_NUM_10,
   dirPin4 = GPIO_NUM_11
 };

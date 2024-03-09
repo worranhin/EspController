@@ -31,7 +31,6 @@ class LinearStepper : public AccelStepper {
   void routine();
 
  private:
-  int _position;         // mm
   unsigned int _travel;  // 电机行程 (mm)
   unsigned int _SPR;     // steps per revolution
   unsigned int _SPM;     // steps per mm

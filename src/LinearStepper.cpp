@@ -13,13 +13,11 @@ LinearStepper::LinearStepper(uint8_t step,
       _travel(travel),
       _SPR(spr),
       _SPM(spm) {
-  _position = 0;
   runMode = RUN;
 };
 
 void LinearStepper::setZero() {
   setCurrentPosition(0);
-  _position = 0;
 }
 
 void LinearStepper::setSpeed_mm(float speed) {
@@ -77,7 +75,8 @@ void LinearStepper::routine() {
       break;
 
     case RUN:
-      run();
+      runSpeedToPosition();
+      // run();
       break;
 
     default:
